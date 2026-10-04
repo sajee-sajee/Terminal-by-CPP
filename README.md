@@ -1,55 +1,54 @@
-# Termino 🖥️ — A Custom Linux Shell with Superpowers!
+# Termino — a small C++ Linux shell
 
-Welcome to **Termino**, a feature-rich custom Linux shell written in C++. This lightweight and interactive shell brings the power of command execution along with cool custom commands like weather updates, note-taking, reminders, background job handling, I/O redirection, and pipelines — all in one terminal interface!
+A learning project exploring POSIX processes, command execution, pipelines, file redirection and background jobs.
 
----
+## Build and run
 
-## 🚀 Features
-
-- ⚙️ **Built-in Linux Shell Commands**
-  - `cd`, `exit`, `jobs`, and standard Linux commands with `execvp`.
-
-- 🔀 **Pipelines**
-  - Supports command piping using `|` (e.g., `ls | grep txt`).
-
-- 🔁 **I/O Redirection**
-  - Input (`<`), Output (`>`), and Append (`>>`) redirection support.
-
-- ⏱️ **Background Process Execution**
-  - Use `&` to run processes in the background (e.g., `sleep 10 &`).
-
-- ☁️ **Custom Commands**
-  - `fetchweather <city>` — Get real-time weather using `wttr.in`.
-  - `notes add/view/delete` — Simple note-taking and management.
-  - `remindme <seconds> <message>` — Schedule reminders via threading.
-
----
-
-## 📂 Project Structure
-
-termino/ ├── termino.cpp # Main source code └── notes.txt # Notes file 
-
----
-
-## 🧠 How It Works
-
-- **Command Parsing**: Tokenizes input, handles background flag `&`, identifies pipes `|`, and redirects.
-- **Process Handling**: Uses `fork()`, `execvp()`, `waitpid()`, and `signal()` to manage execution.
-- **Signal Handling**: Handles `SIGCHLD` to clean up zombie background processes.
-- **Custom Utilities**: Implemented via `system()`, file streams, and `std::thread`.
-
----
-
-## 💡 Example Usage
+Requires Linux, a C++17 compiler and pthreads. `curl` is optional for weather requests.
 
 ```bash
-termino> ls -l
-termino> sleep 5 &
-termino> jobs
-termino> echo "hello" > file.txt
-termino> cat < file.txt
-termino> ls | grep cpp
-termino> fetchweather London
-termino> notes add "Meeting at 5 PM"
-termino> notes view
-termino> remindme 10 "Time to stretch!"
+git clone https://github.com/sajee-sajee/Terminal-by-CPP.git
+cd Terminal-by-CPP
+g++ -std=c++17 -Wall -Wextra -Wpedantic -pthread terminal.cpp -o termino
+./termino
+```
+
+## Features and demonstration
+
+```text
+pwd
+cd /tmp
+echo hello | tr a-z A-Z
+echo first > example.txt
+echo second >> example.txt
+cat < example.txt
+sleep 5 &
+jobs
+notes add "Meeting at 5 PM"
+notes view
+remindme 3 "Take a break"
+fetchweather London
+exit
+```
+
+The notes file is written in the current working directory. `notes delete` clears that file. Reminders run only while the shell process remains alive.
+
+## Tests
+
+```bash
+python3 -m unittest discover -s tests -v
+```
+
+Tests compile the actual shell and cover malformed commands, EOF, quoted and multiword notes, reminders, pipelines and redirection. Temporary test files are isolated from your working directory.
+
+## Design
+
+- `fork` and `execvp` start external programs.
+- Pipes and `dup2` connect pipeline stages and redirect files.
+- Background children are reaped in normal control flow, avoiding unsafe vector modification inside a signal handler.
+- Quoted arguments and escaped characters are tokenized before dispatch.
+- Weather uses a direct `curl` invocation rather than interpolating a shell command.
+
+## Current limitations
+
+This is not a replacement for Bash. Operators require surrounding whitespace; quoted literal operator tokens are not supported. There is no globbing, environment-variable expansion, shell scripting, terminal job control or background pipelines. Built-ins do not support redirection or pipeline execution. Background child cleanup happens when the prompt loop advances. `notes delete` deletes all saved notes, not individual entries. Weather accepts only letters, digits, hyphens and underscores in a city name.
